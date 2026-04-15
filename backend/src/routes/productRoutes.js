@@ -1,59 +1,24 @@
 import express from "express";
-import Product from "../models/Product.js";
+import {
+  createProduct,
+  getProducts,
+  getProduct,
+  updateProduct,
+  deleteProduct
+} from "../controllers/productController.js";
 
+import authMiddleware from "../middleware/authMiddleware.js";
+import roleMiddleware from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
-// ✅ Crear producto
-router.post("/", async (req, res) => {
-  try {
-    const producto = new Product(req.body);
-    const saved = await producto.save();
-    res.status(201).json(saved);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
+// 🔐 SOLO ADMIN
+router.post("/", authMiddleware, roleMiddleware(["admin"]), createProduct);
+router.put("/:id", authMiddleware, roleMiddleware(["admin"]), updateProduct);
+router.delete("/:id", authMiddleware, roleMiddleware(["admin"]), deleteProduct);
 
-// ✅ Obtener todos
-router.get("/", async (req, res) => {
-  const productos = await Product.find();
-  res.json(productos);
-});
-
-// ✅ Obtener uno
-router.get("/:id", async (req, res) => {
-  try {
-    const producto = await Product.findById(req.params.id);
-    if (!producto) return res.status(404).json({ msg: "No encontrado" });
-    res.json(producto);
-  } catch {
-    res.status(400).json({ msg: "ID inválido" });
-  }
-});
-
-// ✅ Actualizar
-router.put("/:id", async (req, res) => {
-  try {
-    const producto = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    res.json(producto);
-  } catch {
-    res.status(400).json({ msg: "Error al actualizar" });
-  }
-});
-
-// ✅ Eliminar
-router.delete("/:id", async (req, res) => {
-  try {
-    await Product.findByIdAndDelete(req.params.id);
-    res.json({ mensaje: "Producto eliminado" });
-  } catch {
-    res.status(400).json({ msg: "Error al eliminar" });
-  }
-});
+// 🔓 PUBLICAS
+router.get("/", getProducts);
+router.get("/:id", getProduct);
 
 export default router;

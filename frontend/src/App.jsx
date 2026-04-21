@@ -2,33 +2,39 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
+
 import PrivateRoute from "./components/PrivateRoute";
 import AdminRoute from "./components/AdminRoute";
+import Layout from "./components/Layout";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* 🔓 pública */}
+        {/* 🔓 LOGIN */}
         <Route path="/" element={<Login />} />
 
-        {/* 🔐 protegida */}
+        {/* 🔐 DASHBOARD CON LAYOUT */}
         <Route
           path="/dashboard"
           element={
             <PrivateRoute>
-              <Dashboard />
+              <Layout>
+                <Dashboard />
+              </Layout>
             </PrivateRoute>
           }
         />
 
-        {/* 🔐 protegida */}
+        {/* 🔐 ADMIN CON LAYOUT */}
         <Route
           path="/admin"
           element={
             <AdminRoute>
-              <Admin />
+              <Layout>
+                <Admin />
+              </Layout>
             </AdminRoute>
           }
         />

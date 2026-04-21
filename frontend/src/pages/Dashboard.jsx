@@ -5,87 +5,102 @@ function Dashboard() {
   const [products, setProducts] = useState([]);
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [stock, setStock] = useState(""); // 👈 NUEVO
 
-  // 🔄 cargar productos
   const getProducts = () => {
     api.get("/products")
-      .then(res => setProducts(res.data))
-      .catch(() => alert("Error cargando productos"));
+      .then(res => setProducts(res.data));
   };
 
   useEffect(() => {
     getProducts();
   }, []);
 
-  // ➕ crear producto
   const createProduct = async () => {
-    try {
-      await api.post("/products", {
-        nombre,
-        precio: Number(precio) // 🔥 CLAVE POR QUE EL BACK ESPERA UN NUMERO NO STRING SE DEFINE ANTES DE ENVIARLO
-      });
+    await api.post("/products", {
+      nombre,
+      precio: Number(precio),
+      descripcion,
+      stock: Number(stock) // 👈 SE ENVÍA
+    });
 
-      setNombre("");
-      setPrecio("");
-
-      getProducts(); // refrescar
-
-    } catch {
-      alert("Error creando producto ❌");
-    }
+    setNombre("");
+    setPrecio("");
+    setDescripcion("");
+    setStock("");
+    getProducts();
   };
 
-  // ❌ eliminar producto
   const deleteProduct = async (id) => {
-    try {
-      await api.delete(`/products/${id}`);
-      getProducts();
-    } catch {
-      alert("No autorizado ❌");
-    }
-  };
-
-  // 🔓 logout
-  const logout = () => {
-    localStorage.removeItem("token");
-    window.location.href = "/";
+    await api.delete(`/products/${id}`);
+    getProducts();
   };
 
   return (
-    <div>
-      <h2>Dashboard</h2>
+    <div className="w-full">
 
-      <button onClick={logout}>Cerrar sesión</button>
+      <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
 
-      <h3>Crear producto</h3>
+      {/* FORM */}
+      <div className="bg-white p-4 rounded shadow mb-6 flex gap-2">
+        <input
+          className="border p-2 rounded w-full"
+          placeholder="Nombre"
+          value={nombre}
+          onChange={e => setNombre(e.target.value)}
+        />
+        <input
+          className="border p-2 rounded w-32"
+          placeholder="Precio"
+          value={precio}
+          onChange={e => setPrecio(e.target.value)}
+        />
+        <input className="border p-2 rounded w-full md:w-64" 
+          placeholder="Descripción" 
+          value={descripcion}
+          onChange={e => setDescripcion(e.target.value)} />
+        <input
+          className="border p-2 rounded w-32"
+          placeholder="Stock"
+          value={stock}
+          onChange={e => setStock(e.target.value)}
+        />
+        <button
+          onClick={createProduct}
+          className="bg-blue-500 text-white px-4 rounded hover:bg-blue-600"
+        >
+          Crear
+        </button>
 
-      <input
-        placeholder="Nombre"
-        value={nombre}
-        onChange={e => setNombre(e.target.value)}
-      />
+      </div>
 
-      <input
-        placeholder="Precio"
-        value={precio}
-        onChange={e => setPrecio(e.target.value)}
-      />
+      {/* LISTA */}
+      <div className="grid gap-3">
 
-      <button onClick={createProduct}>
-        Crear
-      </button>
+        {products.map(p => (
+          <div
+            key={p._id}
+            className="bg-white p-4 rounded shadow flex justify-between items-center"
+          >
+            <div>
+              <p className="font-semibold">{p.nombre}</p>
+              <p className="text-sm text-gray-500"> {p.descripcion} </p>
+              <p className="text-sm text-gray-500">${p.precio}</p>
+              <p className="text-sm text-gray-500">Stock: {p.stock}</p>
+            </div>
 
-      <h3>Productos:</h3>
+            <button
+              onClick={() => deleteProduct(p._id)}
+              className="bg-red-500 text-white px-3 py-1 rounded"
+            >
+              Eliminar
+            </button>
+          </div>
+        ))}
 
-      {products.map(p => (
-        <div key={p._id}>
-          {p.nombre} - ${p.precio}
+      </div>
 
-          <button onClick={() => deleteProduct(p._id)}>
-            Eliminar
-          </button>
-        </div>
-      ))}
     </div>
   );
 }

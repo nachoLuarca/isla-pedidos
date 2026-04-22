@@ -18,33 +18,46 @@ function Layout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100">
 
-      {/* NAVBAR */}
-      <nav className="bg-gray-900 text-white px-6 py-4 flex justify-between items-center shadow">
+      {/* 🔥 SIDEBAR */}
+      <aside className="w-64 bg-gray-900 text-white flex flex-col p-4">
 
-        <div className="flex gap-6 text-sm font-medium">
-          <Link to="/dashboard" className="hover:text-blue-400">
+        <h2 className="text-lg font-bold mb-6">
+          Admin Panel
+        </h2>
+
+        <nav className="flex flex-col gap-3 text-sm">
+
+          <Link
+            to="/dashboard"
+            className="hover:bg-gray-700 p-2 rounded"
+          >
             Dashboard
           </Link>
 
           {role === "admin" && (
-            <Link to="/admin" className="hover:text-yellow-400">
-              Admin
+            <Link
+              to="/admin"
+              className="hover:bg-gray-700 p-2 rounded"
+            >
+              Usuarios
             </Link>
           )}
-        </div>
+
+        </nav>
 
         <button
           onClick={logout}
-          className="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-sm"
+          className="mt-auto bg-red-500 hover:bg-red-600 p-2 rounded text-sm"
         >
-          Cerrer sesión
+          Logout
         </button>
-      </nav>
 
-      {/* CONTENIDO */}
-      <main className="p-6 w-full">
+      </aside>
+
+      {/* 🔥 CONTENIDO */}
+      <main className="flex-1 p-6">
         {children}
       </main>
 

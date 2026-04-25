@@ -3,9 +3,9 @@ import axios from "axios";
 const api = axios.create({
   baseURL: "http://localhost:3000/api"
 });
-
-// 🔐 interceptor → agrega token automáticamente
-api.interceptors.request.use(config => {
+localStorage.getItem("token")
+// 🔥 AGREGA TOKEN AUTOMÁTICO
+api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 
   if (token) {

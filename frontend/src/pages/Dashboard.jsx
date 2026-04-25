@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import api from "../services/api";
 import toast from "react-hot-toast"; // 🔥 IMPORTANTE
 
+
 function Dashboard() {
 
   // 🔹 LISTA DE PRODUCTOS
@@ -18,6 +19,10 @@ function Dashboard() {
 
   // 🔥 REFERENCIA AL FORM
   const formRef = useRef(null);
+  // 🔍 FILTROS (NIVEL 2)
+  const [search, setSearch] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [sort, setSort] = useState("");
 
 
   // 🔥 OBTENER PRODUCTOS
@@ -26,54 +31,76 @@ function Dashboard() {
       .then(res => setProducts(res.data));
   };
 
-
   // 🔥 CARGA INICIAL
   useEffect(() => {
     getProducts();
   }, []);
 
-
   // 🔥 CREAR O EDITAR PRODUCTO
-  const saveProduct = async () => {
-    try {
+const saveProduct = async () => {
+  try {
 
-      if (editingId) {
-        // ✏️ EDITAR
-        await api.put(`/products/${editingId}`, {
-          nombre,
-          precio: Number(precio),
-          descripcion,
-          stock: Number(stock)
-        });
-
-        toast.success("Producto actualizado ✏️");
-
-      } else {
-        // ➕ CREAR
-        await api.post("/products", {
-          nombre,
-          precio: Number(precio),
-          descripcion,
-          stock: Number(stock)
-        });
-
-        toast.success("Producto creado 🚀");
+    // 🔥 PASO 1: VALIDAR SOLO SI ES CREAR
+    if (!editingId) {
+      // ❌ campos vacíos
+      if (!nombre || !precio || !descripcion || !stock) {
+        toast.error("Todos los campos son obligatorios");
+        return; // 🚨 detiene ejecución
       }
 
-      // 🔄 LIMPIAR FORM
-      setNombre("");
-      setPrecio("");
-      setDescripcion("");
-      setStock("");
-      setEditingId(null);
-
-      getProducts();
-
-    } catch {
-      toast.error("Error guardando ❌");
     }
-  };
+    // 🔥 PASO 2: VALIDAR NÚMEROS (CREAR Y EDITAR)
+    if (precio && Number(precio) <= 0) {
+      toast.error("El precio debe ser mayor a 0");
+      return;
+    }
 
+    if (stock && Number(stock) < 0) {
+      toast.error("La cantidad no puede ser negativa");
+      return;
+    }
+
+    // 🔥 PASO 3: CREAR O EDITAR
+    if (editingId) {
+
+      // ✏️ EDITAR
+      await api.put(`/products/${editingId}`, {
+        nombre,
+        precio: Number(precio),
+        descripcion,
+        stock: Number(stock)
+      });
+
+      toast.success("Producto actualizado");
+
+    } else {
+
+      // ➕ CREAR
+      await api.post("/products", {
+        nombre,
+        precio: Number(precio),
+        descripcion,
+        stock: Number(stock)
+      });
+
+      toast.success("Producto creado");
+
+    }
+
+    // 🔥 PASO 4: LIMPIAR FORMULARIO
+    setNombre("");
+    setPrecio("");
+    setDescripcion("");
+    setStock("");
+    setEditingId(null);
+
+    // 🔥 PASO 5: RECARGAR PRODUCTOS
+    getProducts();
+
+  } catch (error) {
+    toast.error("Error guardando");
+  }
+};
 
   // 🔥 ELIMINAR PRODUCTO (CON CONFIRMACIÓN)
   const deleteProduct = async (id) => {
@@ -92,8 +119,6 @@ function Dashboard() {
       toast.error("Error eliminando ❌");
     }
   };
-
-
   // 🔥 ACTIVAR EDICIÓN + SCROLL
   const startEdit = (product) => {
     setEditingId(product._id);
@@ -111,8 +136,6 @@ function Dashboard() {
       });
     }, 100);
   };
-
-
   // 🔥 CANCELAR EDICIÓN
   const cancelEdit = () => {
     setEditingId(null);
@@ -121,16 +144,26 @@ function Dashboard() {
     setDescripcion("");
     setStock("");
   };
-
-
+  // 🔥 FILTRADO + ORDENAMIENTO
+  const filteredProducts = products
+    .filter(p =>
+      p.nombre.toLowerCase().includes(search.toLowerCase())
+    )
+    .filter(p =>
+      minPrice ? p.precio >= Number(minPrice) : true
+    )
+    .sort((a, b) => {
+      if (sort === "asc") return a.precio - b.precio;
+      if (sort === "desc") return b.precio - a.precio;
+      return 0;
+    }
+  );
   return (
     <div className="w-full">
 
       <h2 className="text-2xl font-bold mb-6">
-        Mantenedor de Producto
+        Mantenedor de Productos
       </h2>
-
-
       {/* 🔥 FORMULARIO */}
       <div
         ref={formRef}
@@ -164,20 +197,18 @@ function Dashboard() {
           value={stock}
           onChange={e => setStock(e.target.value)}
         />
-
-
         {/* 🔥 BOTÓN DINÁMICO */}
         <button
           onClick={saveProduct}
+          disabled={!editingId && (!nombre || !precio || !descripcion || !stock)}
           className={`px-4 rounded text-white ${
             editingId
               ? "bg-green-500 hover:bg-green-600"
               : "bg-blue-500 hover:bg-blue-600"
-          }`}
+          } disabled:bg-gray-400`}
         >
-          {editingId ? "Actualizar" : "Agregar"}
+          {editingId ? "Actualizar" : "Agregar"}  
         </button>
-
 
         {/* 🔥 CANCELAR */}
         {editingId && (
@@ -187,20 +218,60 @@ function Dashboard() {
           >
             Cancelar
           </button>
-        )}
-
+        )}      
       </div>
+      {/* 🔥 TÍTULO */}
+      <p className="text-xl font-bold mb-4">
+        Filtros de Busqueda
+      </p>
 
+      <div className="bg-white p-4 rounded shadow mb-6">
+      {/* 🔥 FILTROS EN COLUMNAS */}
+        <div className="flex flex-wrap gap-4 items-end">
 
+          {/* 🔹 BUSCAR */}
+          <div className="flex flex-col">
+            <input
+              className="border p-2 rounded w-48"
+              placeholder="Buscar producto..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* 🔹 PRECIO */}
+          <div className="flex flex-col">
+            <input
+              className="border p-2 rounded w-40"
+              placeholder="Precio mínimo"
+              value={minPrice}
+              onChange={e => setMinPrice(e.target.value)}
+            />
+          </div>
+
+          {/* 🔹 ORDEN */}
+          <div className="flex flex-col">
+            <select
+              className="border p-2 rounded w-40"
+              value={sort}
+              onChange={e => setSort(e.target.value)}
+            >
+              <option value="">Seleccionar</option>
+              <option value="asc">Menor a Mayor</option>
+              <option value="desc">Mayor a Menor</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
       {/* 🔥 LISTA */}
       <div className="grid gap-3">
 
-        {products.map(p => (
+        {filteredProducts.map(p => (
           <div
             key={p._id}
             className="bg-white p-4 rounded shadow flex justify-between items-center"
           >
-
             <div>
               <p className="font-semibold">{p.nombre}</p>
               <p className="text-sm text-gray-500">{p.descripcion}</p>
@@ -209,8 +280,7 @@ function Dashboard() {
                 Cantidad: {p.stock}
               </p>
             </div>
-
-
+            
             <div className="flex gap-2">
 
               <button

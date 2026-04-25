@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import api from "../services/api";
 import toast from "react-hot-toast"; // 🔥 IMPORTANTE
 
+
 function Dashboard() {
 
   // 🔹 LISTA DE PRODUCTOS
@@ -36,45 +37,70 @@ function Dashboard() {
   }, []);
 
   // 🔥 CREAR O EDITAR PRODUCTO
-  const saveProduct = async () => {
-    try {
+const saveProduct = async () => {
+  try {
 
-      if (editingId) {
-        // ✏️ EDITAR
-        await api.put(`/products/${editingId}`, {
-          nombre,
-          precio: Number(precio),
-          descripcion,
-          stock: Number(stock)
-        });
-
-        toast.success("Producto actualizado ✏️");
-
-      } else {
-        // ➕ CREAR
-        await api.post("/products", {
-          nombre,
-          precio: Number(precio),
-          descripcion,
-          stock: Number(stock)
-        });
-
-        toast.success("Producto creado 🚀");
+    // 🔥 PASO 1: VALIDAR SOLO SI ES CREAR
+    if (!editingId) {
+      // ❌ campos vacíos
+      if (!nombre || !precio || !descripcion || !stock) {
+        toast.error("Todos los campos son obligatorios");
+        return; // 🚨 detiene ejecución
       }
 
-      // 🔄 LIMPIAR FORM
-      setNombre("");
-      setPrecio("");
-      setDescripcion("");
-      setStock("");
-      setEditingId(null);
-
-      getProducts();
-
-    } catch {
-      toast.error("Error guardando ❌");
     }
-  };
+    // 🔥 PASO 2: VALIDAR NÚMEROS (CREAR Y EDITAR)
+    if (precio && Number(precio) <= 0) {
+      toast.error("El precio debe ser mayor a 0");
+      return;
+    }
+
+    if (stock && Number(stock) < 0) {
+      toast.error("La cantidad no puede ser negativa");
+      return;
+    }
+
+    // 🔥 PASO 3: CREAR O EDITAR
+    if (editingId) {
+
+      // ✏️ EDITAR
+      await api.put(`/products/${editingId}`, {
+        nombre,
+        precio: Number(precio),
+        descripcion,
+        stock: Number(stock)
+      });
+
+      toast.success("Producto actualizado");
+
+    } else {
+
+      // ➕ CREAR
+      await api.post("/products", {
+        nombre,
+        precio: Number(precio),
+        descripcion,
+        stock: Number(stock)
+      });
+
+      toast.success("Producto creado");
+
+    }
+
+    // 🔥 PASO 4: LIMPIAR FORMULARIO
+    setNombre("");
+    setPrecio("");
+    setDescripcion("");
+    setStock("");
+    setEditingId(null);
+
+    // 🔥 PASO 5: RECARGAR PRODUCTOS
+    getProducts();
+
+  } catch (error) {
+    toast.error("Error guardando");
+  }
+};
 
   // 🔥 ELIMINAR PRODUCTO (CON CONFIRMACIÓN)
   const deleteProduct = async (id) => {
@@ -174,13 +200,14 @@ function Dashboard() {
         {/* 🔥 BOTÓN DINÁMICO */}
         <button
           onClick={saveProduct}
+          disabled={!editingId && (!nombre || !precio || !descripcion || !stock)}
           className={`px-4 rounded text-white ${
             editingId
               ? "bg-green-500 hover:bg-green-600"
               : "bg-blue-500 hover:bg-blue-600"
-          }`}
+          } disabled:bg-gray-400`}
         >
-          {editingId ? "Actualizar" : "Agregar"}
+          {editingId ? "Actualizar" : "Agregar"}  
         </button>
 
         {/* 🔥 CANCELAR */}
@@ -245,7 +272,6 @@ function Dashboard() {
             key={p._id}
             className="bg-white p-4 rounded shadow flex justify-between items-center"
           >
-
             <div>
               <p className="font-semibold">{p.nombre}</p>
               <p className="text-sm text-gray-500">{p.descripcion}</p>
@@ -254,8 +280,7 @@ function Dashboard() {
                 Cantidad: {p.stock}
               </p>
             </div>
-
-
+            
             <div className="flex gap-2">
 
               <button

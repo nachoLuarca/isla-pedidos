@@ -3,19 +3,41 @@ import Product from "../models/Product.js";
 // ✅ Crear
 export const createProduct = async (req, res) => {
   try {
-    const { nombre, precio } = req.body;
+    const { nombre, precio, descripcion, stock } = req.body;
 
-    // 🔥 VALIDACIÓN
-    if (!nombre || typeof precio !== "number") {
-        return res.status(400).json({ msg: "Datos inválidos" });
+    // 🔥 VALIDAR CAMPOS
+    if (!nombre || !precio || !descripcion || stock === undefined) {
+      return res.status(400).json({
+        msg: "Todos los campos son obligatorios"
+      });
     }
 
-    const producto = new Product(req.body);
-    const saved = await producto.save();
+    // 🔥 VALIDAR NÚMEROS
+    if (precio <= 0) {
+      return res.status(400).json({
+        msg: "Precio inválido"
+      });
+    }
 
-    res.status(201).json(saved);
+    if (stock < 0) {
+      return res.status(400).json({
+        msg: "Stock inválido"
+      });
+    }
+
+    const product = new Product({
+      nombre,
+      precio,
+      descripcion,
+      stock
+    });
+
+    await product.save();
+
+    res.json(product);
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json(error);
   }
 };
 
